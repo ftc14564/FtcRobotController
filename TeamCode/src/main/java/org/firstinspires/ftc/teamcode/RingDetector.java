@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.robotcore.hardware.DcMotor;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -13,6 +15,8 @@ import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
+import static android.os.SystemClock.sleep;
+
 public class RingDetector {
     // Lower and Upper bounds for range checking in HSV color space
     private Scalar mLowerBound = new Scalar(12, 100, 100);
@@ -25,6 +29,11 @@ public class RingDetector {
     Mat mMask = new Mat();
     Mat mDilatedMask = new Mat();
     Mat mHierarchy = new Mat();
+
+    DcMotor motorRightFront;
+    DcMotor motorLeftFront;
+    DcMotor motorRightBack;
+    DcMotor motorLeftBack;
 
     public char process(Mat rgbaImage) {
         Imgproc.pyrDown(rgbaImage, mPyrDownMat);
@@ -61,8 +70,16 @@ public class RingDetector {
                     new Scalar(33,137,255), 2);
             double ratio = (double) (rectBounding.width / rectBounding.height);
             if (ratio <= 2){
+                //strafe(1,-1, 6);
+                motorLeftFront.setPower(1);
+                sleep(500);
+                motorLeftFront.setPower(0);
                 return 'C';
             } else {
+                //strafe(1, 1, 6);
+                motorLeftFront.setPower(-1);
+                sleep(500);
+                motorLeftFront.setPower(0);
                 return 'B';
             }
         } else
