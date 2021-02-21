@@ -4,6 +4,7 @@ import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -39,7 +40,26 @@ import static org.firstinspires.ftc.robotcore.external.navigation.AxesOrder.YZX;
 import static org.firstinspires.ftc.robotcore.external.navigation.AxesReference.EXTRINSIC;
 import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection.BACK;
 
-public class Autonomous2021 {
+@Autonomous(name = "Autonomous2020")
+public class Autonomous2021 extends Teleop2021 {
+
+    DcMotor motorRightFront;
+    DcMotor motorLeftFront;
+    DcMotor motorRightBack;
+    DcMotor motorLeftBack;
+
+    public void simpleStrafe(double power) {
+        motorLeftFront.setDirection(DcMotorSimple.Direction.FORWARD);
+        motorRightBack.setDirection(DcMotorSimple.Direction.REVERSE);
+        motorRightFront.setDirection(DcMotorSimple.Direction.FORWARD);
+        motorLeftBack.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        motorLeftFront.setPower(power);
+        motorRightBack.setPower(power);
+        motorRightFront.setPower(power);
+        motorLeftBack.setPower(power);
+
+    }
 
 
 }
