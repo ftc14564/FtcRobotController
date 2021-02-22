@@ -43,11 +43,6 @@ import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocaliz
 @Autonomous(name = "Autonomous2020")
 public class Autonomous2021 extends Teleop2021 {
 
-    DcMotor motorRightFront;
-    DcMotor motorLeftFront;
-    DcMotor motorRightBack;
-    DcMotor motorLeftBack;
-
     public void simpleStrafe(double power) {
         motorLeftFront.setDirection(DcMotorSimple.Direction.FORWARD);
         motorRightBack.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -60,6 +55,5 @@ public class Autonomous2021 extends Teleop2021 {
         motorLeftBack.setPower(power);
 
     }
-
 
 }
