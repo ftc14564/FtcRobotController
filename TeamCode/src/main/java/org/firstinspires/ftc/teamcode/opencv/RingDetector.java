@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.opencv;
 
+import android.util.Log;
+
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
@@ -24,6 +26,8 @@ public class RingDetector  {
     private Scalar mLowerBound = new Scalar(12, 100, 100);
     private Scalar mUpperBound = new Scalar(36, 255, 255);
     private List<MatOfPoint> mContours = new ArrayList<MatOfPoint>();
+
+    private static final String TAG = "RingDetector";
 
     // Cache
     Mat mPyrDownMat = new Mat();
@@ -66,7 +70,8 @@ public class RingDetector  {
             //Imgproc.rectangle(rgbaImage, new Point(rectBounding.x, rectBounding.y),
             //new Point(rectBounding.x + rectBounding.width, rectBounding.y + rectBounding.height)
             //new Scalar(33,137,255), 2);
-            double ratio = (double) (rectBounding.width / rectBounding.height);
+            double ratio = (double) ((double)rectBounding.width /(double) rectBounding.height);
+            //Log.d(TAG,  "Ratio =" + String.valueOf(ratio));
             if (ratio <= 2){
                 return 'C';
             } else {
