@@ -9,6 +9,7 @@ import com.vuforia.PIXEL_FORMAT;
 import com.vuforia.Vuforia;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.internal.system.AppUtil;
 import org.firstinspires.ftc.teamcode.opencv.RingDetector;
@@ -30,6 +31,7 @@ public class RingAutonomous extends  Teleop2021 {
     private static final String TAG = "RingAutonomous";
     private static final VuforiaLocalizer.CameraDirection CAMERA_CHOICE = BACK;
     private static final boolean PHONE_IS_PORTRAIT = false  ;
+    private static final String CAMERA_DEVICE_NAME = "Internal";  // valid values are "Internal", "Webcam 1", "Webcam 2"
 
     private static final String VUFORIA_KEY =
             "AYpOJ0H/////AAABGeEbm+5m+k5BrTnPlF3X9R177NGoUFUGl1kpgLa7MBwlsRdnD3IdxY7LmZ41NTQMASZ1MbCWaEpM4Sag7tDfQsJjqVvCwZr3qJm5y33J8rnMWz1ViOwwzZgnsSZqeGRY9+uPGa6cTMO/cxs+YF+4OqsD+iu4exeMCsxyAPYhXQrEIaW6h7zYVrdi9b5WsgNGUfP60Qz8U3szKTfVmaHmMFvc+iuJ1qmAM5AjlsBlc8MMHzLAL/3sf3UiCDe4tgo4mmYEsdl499QhqhhImEiKS8rTkap/53B8Hm89z3m5HuBoH4EKVUc65k2aCBg5c5jXVoZan8DkQFqSPnArwQnCHpaL/d1y79BRE44nJXj54E6V";
@@ -48,7 +50,6 @@ public class RingAutonomous extends  Teleop2021 {
     @Override
     public void runOpMode()  {
 
-        // get videocapture
         Log.v(TAG, "Initializing OpenCV");
         // Initialize OpenCV
         if (!OpenCVLoader.initDebug()) {
@@ -62,14 +63,23 @@ public class RingAutonomous extends  Teleop2021 {
 
         Log.v(TAG, "Initialized OpenCV");
 
+        WebcamName webcamName = null;
+
+        if (CAMERA_DEVICE_NAME.startsWith("Webcam"))
+        {
+            webcamName = hardwareMap.get(WebcamName.class, "Webcam 1");
+        }
 
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters(cameraMonitorViewId);
 
-        // VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
-
         parameters.vuforiaLicenseKey = VUFORIA_KEY;
         parameters.cameraDirection   = CAMERA_CHOICE;
+
+        if (webcamName != null)
+        {
+            parameters.cameraName = webcamName;
+        }
 
         // Make sure extended tracking is disabled for this example.
         parameters.useExtendedTracking = false;
@@ -91,20 +101,13 @@ public class RingAutonomous extends  Teleop2021 {
 
         while (opModeIsActive()) {
             // get frame from capture device
-            //Log.d(TAG, "in loop");
-            //telemetry.addData("Loop started", "clicked");
-
             try {
                 frame = vuforia.getFrameQueue().take();
             } catch (InterruptedException ex)
             {
                 Log.v(TAG, "could note TAKE image");
             }
-            //Log.v(TAG, "***** Got a frame or more");
-
-
             char ch_result = '?';
-
             long numImages = frame.getNumImages();
             for (int i = 0; i < numImages; i++) {
                 if (frame.getImage(i).getFormat() == PIXEL_FORMAT.RGB565) {
@@ -123,24 +126,18 @@ public class RingAutonomous extends  Teleop2021 {
                             Log.d(TAG, "ringDetector Processing image failed");
                         }
                         mat.release();
+                        frame.close();
                         telemetry.addData("Ring Detected", "Path = %s", String.valueOf(ch_result));
                         Log.d(TAG, "Ring = " + String.valueOf(ch_result));
                         telemetry.update();
-                        //break;  // one frame is plenty
+                        break;  // one frame is all we are setup to get
                     }
                 }
             }
-
-            telemetry.update();
             idle();
         }
         telemetry.addData("Ring Detection Termination", "");
-
         // close camera
-
         telemetry.update();
     }
-
-
-
 }
