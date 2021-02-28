@@ -1,29 +1,26 @@
 package org.firstinspires.ftc.teamcode.opencv;
 
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.hardware.DcMotor;
+import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.firstinspires.ftc.teamcode.Autonomous2021;
 import org.opencv.core.Core;
-import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
-import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
-import static java.lang.Thread.sleep;
 
 public class RingDetector  {
     // Lower and Upper bounds for range checking in HSV color space
     private Scalar mLowerBound = new Scalar(12, 100, 100);
     private Scalar mUpperBound = new Scalar(36, 255, 255);
     private List<MatOfPoint> mContours = new ArrayList<MatOfPoint>();
+
+    private static final String TAG = "RingDetector";
 
     // Cache
     Mat mPyrDownMat = new Mat();
@@ -66,7 +63,8 @@ public class RingDetector  {
             //Imgproc.rectangle(rgbaImage, new Point(rectBounding.x, rectBounding.y),
             //new Point(rectBounding.x + rectBounding.width, rectBounding.y + rectBounding.height)
             //new Scalar(33,137,255), 2);
-            double ratio = (double) (rectBounding.width / rectBounding.height);
+            double ratio = (double) ((double)rectBounding.width /(double) rectBounding.height);
+            //Log.d(TAG,  "Ratio =" + String.valueOf(ratio));
             if (ratio <= 2){
                 return 'C';
             } else {
