@@ -103,6 +103,7 @@ public class MecanumDrivetrain extends MecanumDrive {
     public MecanumDrivetrain(HardwareMap hardwareMap) {
         super(kV, kA, kStatic, TRACK_WIDTH, TRACK_WIDTH, LATERAL_MULTIPLIER);
 
+        FtcDashboard.start();
         dashboard = FtcDashboard.getInstance();
         dashboard.setTelemetryTransmissionInterval(25);
 
