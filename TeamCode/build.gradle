@@ -21,4 +21,5 @@ repositories {
 dependencies {
     annotationProcessor files('lib/OpModeAnnotationProcessor.jar')
     implementation project(path: ':openCVLibrary343')
+    implementation 'androidx.annotation:annotation:1.1.0'
 }
