@@ -12,7 +12,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import org.firstinspires.ftc.teamcode.drive.MecanumDrivetrain;
 
 
-@Autonomous
+@Autonomous (name = "Autonomous2021")
 public class Autonomous2021 extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
@@ -24,11 +24,14 @@ public class Autonomous2021 extends LinearOpMode {
         if (isStopRequested()) return;
 
         DcMotorEx intake = hardwareMap.get(DcMotorEx.class, "Intake");
-        DcMotorEx grabber = hardwareMap.get(DcMotorEx.class, "Grabber");
+        DcMotorEx grabber = hardwareMap.get(DcMotorEx.class, "WobbleGoal");
+        DcMotorEx ramp = hardwareMap.get(DcMotorEx.class, "Ramp");
 
         grabber.setPower(-0.75);
 
         intake.setPower(1);
+
+        ramp.setPower(1);
 
         Trajectory traj = drive.trajectoryBuilder(drive.getPoseEstimate(), true)
                 .splineTo(new Vector2d(0, 0), Math.toRadians(0))
