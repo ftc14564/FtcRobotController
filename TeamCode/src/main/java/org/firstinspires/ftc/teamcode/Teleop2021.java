@@ -66,8 +66,8 @@ public class Teleop2021 extends LinearOpMode {
 
         //leftFront, leftRear, rightRear, rightFront
         rightFront = hardwareMap.dcMotor.get("rightFront");
-        rightBack = hardwareMap.dcMotor.get("rightBack");
-        leftFront = hardwareMap.dcMotor.get("leftFront");
+        rightBack = hardwareMap.dcMotor.get("rightRear");
+        leftFront = hardwareMap.dcMotor.get("leftRear");
         leftBack = hardwareMap.dcMotor.get("leftBack");
         leftFront.setDirection(DcMotorSimple.Direction.FORWARD);
         leftBack.setDirection(DcMotorSimple.Direction.REVERSE);

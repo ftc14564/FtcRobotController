@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.drive.MecanumDrivetrain;
 
@@ -26,6 +27,7 @@ public class Autonomous2021 extends LinearOpMode {
         DcMotorEx intake = hardwareMap.get(DcMotorEx.class, "Intake");
         DcMotorEx grabber = hardwareMap.get(DcMotorEx.class, "WobbleGoal");
         DcMotorEx ramp = hardwareMap.get(DcMotorEx.class, "Ramp");
+
 
         grabber.setPower(-0.75);
 
