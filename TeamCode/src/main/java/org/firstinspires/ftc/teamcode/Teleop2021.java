@@ -24,8 +24,8 @@ public class Teleop2021 extends LinearOpMode {
 
     DcMotor rightFront;
     DcMotor leftFront;
-    DcMotor rightBack;
-    DcMotor leftBack;
+    DcMotor rightRear;
+    DcMotor leftRear;
     //leftFront, leftRear, rightRear, rightFront
     DcMotor launch;
     DcMotor intake;
@@ -66,13 +66,13 @@ public class Teleop2021 extends LinearOpMode {
 
         //leftFront, leftRear, rightRear, rightFront
         rightFront = hardwareMap.dcMotor.get("rightFront");
-        rightBack = hardwareMap.dcMotor.get("rightRear");
+        rightRear = hardwareMap.dcMotor.get("rightRear");
         leftFront = hardwareMap.dcMotor.get("leftRear");
-        leftBack = hardwareMap.dcMotor.get("leftBack");
+        leftRear = hardwareMap.dcMotor.get("leftBack");
         leftFront.setDirection(DcMotorSimple.Direction.FORWARD);
-        leftBack.setDirection(DcMotorSimple.Direction.REVERSE);
+        leftRear.setDirection(DcMotorSimple.Direction.REVERSE);
         rightFront.setDirection(DcMotorSimple.Direction.REVERSE);
-        rightBack.setDirection(DcMotorSimple.Direction.FORWARD);
+        rightRear.setDirection(DcMotorSimple.Direction.FORWARD);
 
         launch = hardwareMap.dcMotor.get("Launch");
         intake = hardwareMap.dcMotor.get("Intake");
@@ -88,9 +88,9 @@ public class Teleop2021 extends LinearOpMode {
         strafing = false;
 
         rightFront.setMode(RUN_WITHOUT_ENCODER);
-        rightBack.setMode(RUN_WITHOUT_ENCODER);
+        rightRear.setMode(RUN_WITHOUT_ENCODER);
         leftFront.setMode(RUN_WITHOUT_ENCODER);
-        leftBack.setMode(RUN_WITHOUT_ENCODER);
+        leftRear.setMode(RUN_WITHOUT_ENCODER);
 
         power_multiplier = 1;
 
@@ -98,18 +98,18 @@ public class Teleop2021 extends LinearOpMode {
         angleToTurn = 30;
 
         double driveSpeed = 0;
-        leftBack.setPower(driveSpeed);
+        leftRear.setPower(driveSpeed);
         leftFront.setPower(driveSpeed);
-        rightBack.setPower(driveSpeed);
+        rightRear.setPower(driveSpeed);
         rightFront.setPower(driveSpeed);
     }
 
 
     public void stopWheels() {
-        rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        rightBack.setPower(0);
-        leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        leftBack.setPower(0);
+        rightRear.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightRear.setPower(0);
+        leftRear.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        leftRear.setPower(0);
         rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rightFront.setPower(0);
         leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -136,13 +136,13 @@ public class Teleop2021 extends LinearOpMode {
         double d = -(x + y) - basePower * ((x + y) / Math.abs(x + y));
 
         leftFront.setDirection(DcMotorSimple.Direction.FORWARD);
-        leftBack.setDirection(DcMotorSimple.Direction.REVERSE); //changed for 2020 config
+        leftRear.setDirection(DcMotorSimple.Direction.REVERSE); //changed for 2020 config
         rightFront.setDirection(DcMotorSimple.Direction.REVERSE);
-        rightBack.setDirection(DcMotorSimple.Direction.FORWARD);
+        rightRear.setDirection(DcMotorSimple.Direction.FORWARD);
         leftFront.setPower(a + turn);
         rightFront.setPower(b - turn);
-        leftBack.setPower(c - turn);
-        rightBack.setPower(d + turn);
+        leftRear.setPower(c - turn);
+        rightRear.setPower(d + turn);
 
     }
 
@@ -251,24 +251,24 @@ public class Teleop2021 extends LinearOpMode {
             if (gamepad1.left_bumper && Math.abs(forward) > 0.1) {
                 //right turn
                 leftFront.setDirection(DcMotorSimple.Direction.REVERSE);  //changed
-                leftBack.setDirection(DcMotorSimple.Direction.REVERSE);   //changed
+                leftRear.setDirection(DcMotorSimple.Direction.REVERSE);   //changed
                 rightFront.setDirection(DcMotorSimple.Direction.REVERSE); //default
-                rightBack.setDirection(DcMotorSimple.Direction.REVERSE);  //default
+                rightRear.setDirection(DcMotorSimple.Direction.REVERSE);  //default
                 rightFront.setPower(forward * power_multiplier);
-                rightBack.setPower(forward * power_multiplier);
+                rightRear.setPower(forward * power_multiplier);
                 leftFront.setPower(forward * power_multiplier);
-                leftBack.setPower(forward * power_multiplier);
+                leftRear.setPower(forward * power_multiplier);
 
             } else if (gamepad1.right_bumper && Math.abs(forward) > 0.1) {
                 //left turn
                 leftFront.setDirection(DcMotorSimple.Direction.FORWARD);  //default
-                leftBack.setDirection(DcMotorSimple.Direction.FORWARD);  //default
+                leftRear.setDirection(DcMotorSimple.Direction.FORWARD);  //default
                 rightFront.setDirection(DcMotorSimple.Direction.FORWARD); //changed
-                rightBack.setDirection(DcMotorSimple.Direction.FORWARD);  //changed
+                rightRear.setDirection(DcMotorSimple.Direction.FORWARD);  //changed
                 rightFront.setPower(forward * power_multiplier);
-                rightBack.setPower(forward * power_multiplier);
+                rightRear.setPower(forward * power_multiplier);
                 leftFront.setPower(forward * power_multiplier);
-                leftBack.setPower(forward * power_multiplier);
+                leftRear.setPower(forward * power_multiplier);
 
             } else if (Math.abs(x_component) > 0.1 || (Math.abs(y_component)>0.1)) {
                 vectorCombine(x_component, y_component, turn_component);
@@ -319,9 +319,9 @@ public class Teleop2021 extends LinearOpMode {
 //            }
         }
 
-        leftBack.setPower(0);
+        leftRear.setPower(0);
         leftFront.setPower(0);
-        rightBack.setPower(0);
+        rightRear.setPower(0);
         rightFront.setPower(0);
         launch.setPower(0);
         wobbleGoal.setPower(0);

@@ -49,6 +49,12 @@ public class BackAndForth extends LinearOpMode {
             drive.followTrajectory(trajectoryBackward);
         //drive.setMotorPowers(1, 1, 1, 1);
 
+            Pose2d error = drive.getLastError();
+            telemetry.addData("xError", error.getX());
+            telemetry.addData("yError", error.getY());
+            telemetry.addData("headingError", error.getHeading());
+            telemetry.update();
+
         }
 
     }
