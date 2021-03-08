@@ -16,6 +16,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
 import java.util.Locale;
 
+import static com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_USING_ENCODER;
 import static com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_WITHOUT_ENCODER;
 import static com.qualcomm.robotcore.hardware.DcMotor.RunMode.STOP_AND_RESET_ENCODER;
 
@@ -67,11 +68,11 @@ public class Teleop2021 extends LinearOpMode {
         //leftFront, leftRear, rightRear, rightFront
         rightFront = hardwareMap.dcMotor.get("rightFront");
         rightRear = hardwareMap.dcMotor.get("rightRear");
-        leftFront = hardwareMap.dcMotor.get("leftRear");
-        leftRear = hardwareMap.dcMotor.get("leftBack");
-        leftFront.setDirection(DcMotorSimple.Direction.FORWARD);
+        leftFront = hardwareMap.dcMotor.get("leftFront");
+        leftRear = hardwareMap.dcMotor.get("leftRear");
+        leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
         leftRear.setDirection(DcMotorSimple.Direction.REVERSE);
-        rightFront.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightFront.setDirection(DcMotorSimple.Direction.FORWARD);
         rightRear.setDirection(DcMotorSimple.Direction.FORWARD);
 
         launch = hardwareMap.dcMotor.get("Launch");
@@ -87,10 +88,10 @@ public class Teleop2021 extends LinearOpMode {
 
         strafing = false;
 
-        rightFront.setMode(RUN_WITHOUT_ENCODER);
+        rightFront.setMode(RUN_USING_ENCODER);
         rightRear.setMode(RUN_WITHOUT_ENCODER);
         leftFront.setMode(RUN_WITHOUT_ENCODER);
-        leftRear.setMode(RUN_WITHOUT_ENCODER);
+        leftRear.setMode(RUN_USING_ENCODER);
 
         power_multiplier = 1;
 
@@ -135,9 +136,9 @@ public class Teleop2021 extends LinearOpMode {
         double c = -(y - x) - basePower * ((y - x) / Math.abs(y - x));
         double d = -(x + y) - basePower * ((x + y) / Math.abs(x + y));
 
-        leftFront.setDirection(DcMotorSimple.Direction.FORWARD);
-        leftRear.setDirection(DcMotorSimple.Direction.REVERSE); //changed for 2020 config
-        rightFront.setDirection(DcMotorSimple.Direction.REVERSE);
+        leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
+        leftRear.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightFront.setDirection(DcMotorSimple.Direction.FORWARD);
         rightRear.setDirection(DcMotorSimple.Direction.FORWARD);
         leftFront.setPower(a + turn);
         rightFront.setPower(b - turn);
@@ -233,101 +234,52 @@ public class Teleop2021 extends LinearOpMode {
     @Override
     public void runOpMode() {
 
-        double liftTarget = 0;
         teleopInitFn();
 
         waitForStart();
 
-        // run until the end of the match (driver presses STOP)
+
         while (opModeIsActive()) {
 
-            idle();
-
-            float forward = -1 * gamepad1.right_stick_y;
-            double turn_component = gamepad1.left_stick_x*0.7;
-            double x_component = gamepad1.right_stick_x;
-            double y_component = -1 * gamepad1.right_stick_y;
-
-            if (gamepad1.left_bumper && Math.abs(forward) > 0.1) {
-                //right turn
-                leftFront.setDirection(DcMotorSimple.Direction.REVERSE);  //changed
-                leftRear.setDirection(DcMotorSimple.Direction.REVERSE);   //changed
-                rightFront.setDirection(DcMotorSimple.Direction.REVERSE); //default
-                rightRear.setDirection(DcMotorSimple.Direction.REVERSE);  //default
-                rightFront.setPower(forward * power_multiplier);
-                rightRear.setPower(forward * power_multiplier);
-                leftFront.setPower(forward * power_multiplier);
-                leftRear.setPower(forward * power_multiplier);
-
-            } else if (gamepad1.right_bumper && Math.abs(forward) > 0.1) {
-                //left turn
-                leftFront.setDirection(DcMotorSimple.Direction.FORWARD);  //default
-                leftRear.setDirection(DcMotorSimple.Direction.FORWARD);  //default
-                rightFront.setDirection(DcMotorSimple.Direction.FORWARD); //changed
-                rightRear.setDirection(DcMotorSimple.Direction.FORWARD);  //changed
-                rightFront.setPower(forward * power_multiplier);
-                rightRear.setPower(forward * power_multiplier);
-                leftFront.setPower(forward * power_multiplier);
-                leftRear.setPower(forward * power_multiplier);
-
-            } else if (Math.abs(x_component) > 0.1 || (Math.abs(y_component)>0.1)) {
-                vectorCombine(x_component, y_component, turn_component);
-            } else {
-                stopWheels();
+            if (gamepad1.left_bumper){
+                ramp.setPower(-1);
+                intake.setPower(-1);
+            }
+//            if (gamepad1.right_bumper){
+//                ramp.setPower(1);
+//                intake.setPower(1);
+//            }
+            if (gamepad1.y){
+                wobbleGoal.setPower(1);
+            }
+            if (gamepad1.b){
+                wobbleGoal.setPower(-1);
+            }
+            if (gamepad1.right_bumper){
+                launch.setPower(-1);
             }
 
-            if (gamepad1.dpad_up){
-                openGrabber();
+
+            if (Math.abs(gamepad1.right_stick_y)> 0.01){
+                rightFront.setPower(-gamepad1.right_stick_y);
+                rightRear.setPower(-gamepad1.right_stick_y);
             }
-
-            if (gamepad1.dpad_down){
-                closeGrabber();
+            if (Math.abs(gamepad1.left_stick_y)> 0.01){
+                leftFront.setPower(-gamepad1.left_stick_y);
+                leftRear.setPower(-gamepad1.left_stick_y);
             }
+            wobbleGoal.setPower(0);
+            ramp.setPower(0);
+            intake.setPower(0);
+            rightRear.setPower(0);
+            rightFront.setPower(0);
+            leftRear.setPower(0);
+            leftFront.setPower(0);
+            launch.setPower(0);
 
-            while (gamepad1.y){
-                launchRing();
-            }
 
-//            if (gamepad2.right_bumper) {
-//                grab_back.setPosition(0);
-//                grab_front.setPosition(0.5);
-//            }
-//
-//            if (gamepad2.left_bumper) {
-//                grab_back.setPosition(0);
-//                grab_front.setPosition(0);
-//            }
-//
-//            if (gamepad1.x) {  //position up
-//                foundation.setPosition(0);
-//            }
-
-//            if (gamepad1.y) {   //position down
-//                foundation.setPosition(1);
-//            }
-//
-//            if (lift.getCurrentPosition() < LIFT_MAX_INCH * REV_CORE_HEX_TICKS_PER_INCH && gamepad2.y) {
-//                liftTarget = liftTarget + (LIFT_JUMP_RESOLUTION * REV_CORE_HEX_TICKS_PER_INCH);
-//            }
-//
-//            if (gamepad2.x) {
-//                liftTarget = liftTarget - (LIFT_JUMP_RESOLUTION * REV_CORE_HEX_TICKS_PER_INCH);
-//            }
-//
-//            if(Math.abs(liftTarget) > 5) {
-//                setLiftPosition(Math.abs(liftTarget));
-//            }
         }
 
-        leftRear.setPower(0);
-        leftFront.setPower(0);
-        rightRear.setPower(0);
-        rightFront.setPower(0);
-        launch.setPower(0);
-        wobbleGoal.setPower(0);
-        intake.setPower(0);
-        //telemetry.addData("lift encoder value", lift.getCurrentPosition());
-
-
     }
+
 }

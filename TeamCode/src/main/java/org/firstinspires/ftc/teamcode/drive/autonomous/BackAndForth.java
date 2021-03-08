@@ -8,6 +8,8 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 import org.firstinspires.ftc.teamcode.drive.MecanumDrivetrain;
 
+import java.util.List;
+
 /*
  * Op mode for preliminary tuning of the follower PID coefficients (located in the drive base
  * classes). The robot drives back and forth in a straight line indefinitely. Utilization of the
@@ -28,7 +30,7 @@ import org.firstinspires.ftc.teamcode.drive.MecanumDrivetrain;
 @Autonomous(group = "drive")
 public class BackAndForth extends LinearOpMode {
 
-    public static double DISTANCE = 50;
+    public static double DISTANCE = 30;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -49,10 +51,11 @@ public class BackAndForth extends LinearOpMode {
             drive.followTrajectory(trajectoryBackward);
         //drive.setMotorPowers(1, 1, 1, 1);
 
-            Pose2d error = drive.getLastError();
-            telemetry.addData("xError", error.getX());
-            telemetry.addData("yError", error.getY());
-            telemetry.addData("headingError", error.getHeading());
+            List<Double> poseEstimate = drive.getWheelPositions();
+            telemetry.addData("w1", poseEstimate.get(0));
+            telemetry.addData("w2", poseEstimate.get(1));
+            telemetry.addData("w3", poseEstimate.get(2));
+            telemetry.addData("w4", poseEstimate.get(3));
             telemetry.update();
 
         }
