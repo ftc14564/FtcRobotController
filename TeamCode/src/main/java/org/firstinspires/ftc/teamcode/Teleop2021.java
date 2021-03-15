@@ -241,6 +241,13 @@ public class Teleop2021 extends LinearOpMode {
 
         while (opModeIsActive()) {
 
+            float forward = -1 * gamepad1.right_stick_y;
+            double turn_component = gamepad1.left_stick_x*0.7;
+            double x_component = gamepad1.right_stick_x;
+            double y_component = -1 * gamepad1.right_stick_y;
+
+
+
             if (gamepad1.left_bumper){
                 ramp.setPower(-1);
                 intake.setPower(-1);
@@ -256,17 +263,21 @@ public class Teleop2021 extends LinearOpMode {
                 wobbleGoal.setPower(-1);
             }
             if (gamepad1.right_bumper){
-                launch.setPower(-1);
+                launch.setPower(1);
             }
 
 
             if (Math.abs(gamepad1.right_stick_y)> 0.01){
                 rightFront.setPower(-gamepad1.right_stick_y);
                 rightRear.setPower(-gamepad1.right_stick_y);
-            }
-            if (Math.abs(gamepad1.left_stick_y)> 0.01){
                 leftFront.setPower(-gamepad1.left_stick_y);
                 leftRear.setPower(-gamepad1.left_stick_y);
+            }
+            if (Math.abs(gamepad1.right_stick_x)> 0.01){
+                rightFront.setPower(-gamepad1.right_stick_y);
+                rightRear.setPower(gamepad1.right_stick_y);
+                leftFront.setPower(-gamepad1.left_stick_y);
+                leftRear.setPower(gamepad1.left_stick_y);
             }
             wobbleGoal.setPower(0);
             ramp.setPower(0);
