@@ -13,6 +13,7 @@ import com.acmerobotics.roadrunner.drive.MecanumDrive;
 import com.acmerobotics.roadrunner.followers.HolonomicPIDVAFollower;
 import com.acmerobotics.roadrunner.followers.TrajectoryFollower;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
+import com.acmerobotics.roadrunner.localization.Localizer;
 import com.acmerobotics.roadrunner.profile.MotionProfile;
 import com.acmerobotics.roadrunner.profile.MotionProfileGenerator;
 import com.acmerobotics.roadrunner.profile.MotionState;
@@ -153,7 +154,7 @@ public class MecanumDrivetrain extends MecanumDrive {
         motors = Arrays.asList(leftFront, leftRear, rightRear, rightFront);
 
         rightFront.setDirection(DcMotorSimple.Direction.REVERSE);
-        leftRear.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightRear.setDirection(DcMotorSimple.Direction.REVERSE);
 
         for (DcMotorEx motor : motors) {
             MotorConfigurationType motorConfigurationType = motor.getMotorType().clone();
@@ -247,6 +248,8 @@ public class MecanumDrivetrain extends MecanumDrive {
         TelemetryPacket packet = new TelemetryPacket();
         Canvas fieldOverlay = packet.fieldOverlay();
 
+        StandardTrackingWheelLocalizer local = (StandardTrackingWheelLocalizer) getLocalizer();
+
         packet.put("mode", mode);
 
         packet.put("x", currentPose.getX());
@@ -261,6 +264,10 @@ public class MecanumDrivetrain extends MecanumDrive {
         packet.put("p1", motorPowers[1]);
         packet.put("p2", motorPowers[2]);
         packet.put("p3", motorPowers[3]);
+
+        packet.put("e0", local.ticks_inch[0]);
+        packet.put("e1", local.ticks_inch[1]);
+        packet.put("e2", local.ticks_inch[2]);
 
         switch (mode){
             case IDLE:

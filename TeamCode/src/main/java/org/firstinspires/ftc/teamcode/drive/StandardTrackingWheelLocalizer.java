@@ -35,9 +35,11 @@ public class StandardTrackingWheelLocalizer extends ThreeTrackingWheelLocalizer 
     //normally gear ratio, but we will use for traction rate
     //this probably needs to be fixed mechanically
     public static double LATERAL_DISTANCE = 8.25; // in; distance between the left and right wheels
-    public static double FORWARD_OFFSET = 7; // in; offset of the lateral wheel
+    public static double FORWARD_OFFSET = -7; // in; offset of the lateral wheel
 
     private Encoder leftEncoder, rightEncoder, frontEncoder;
+
+    public Double[] ticks_inch = new Double[]{0.0, 0.0, 0.0};
 
     public StandardTrackingWheelLocalizer(HardwareMap hardwareMap) {
         super(Arrays.asList(
@@ -63,11 +65,12 @@ public class StandardTrackingWheelLocalizer extends ThreeTrackingWheelLocalizer 
     @NonNull
     @Override
     public List<Double> getWheelPositions() {
-        return Arrays.asList(
+        ticks_inch = new Double[]{
                 encoderTicksToInches_V(leftEncoder.getCurrentPosition()),
                 encoderTicksToInches_V(rightEncoder.getCurrentPosition()),
                 encoderTicksToInches_H(frontEncoder.getCurrentPosition())
-        );
+        };
+        return Arrays.asList(ticks_inch);
     }
 
     @NonNull
