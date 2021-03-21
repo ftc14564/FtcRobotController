@@ -87,6 +87,7 @@ public class MecanumDrivetrain extends MecanumDrive {
     private MotionProfile turnProfile;
     private double turnStart;
 
+    private Double[] motorPowers;
     private TrajectoryVelocityConstraint velConstraint;
     private TrajectoryAccelerationConstraint accelConstraint;
     private TrajectoryFollower follower;
@@ -104,11 +105,12 @@ public class MecanumDrivetrain extends MecanumDrive {
     public MecanumDrivetrain(HardwareMap hardwareMap) {
         super(kV, kA, kStatic, TRACK_WIDTH, TRACK_WIDTH, LATERAL_MULTIPLIER);
 
-        FtcDashboard.start();
         dashboard = FtcDashboard.getInstance();
         dashboard.setTelemetryTransmissionInterval(25);
 
         clock = NanoClock.system();
+
+        motorPowers = new Double[]{0.0, 0.0, 0.0, 0.0};
 
         mode = Mode.IDLE;
 
@@ -150,7 +152,7 @@ public class MecanumDrivetrain extends MecanumDrive {
 
         motors = Arrays.asList(leftFront, leftRear, rightRear, rightFront);
 
-        leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightFront.setDirection(DcMotorSimple.Direction.REVERSE);
         leftRear.setDirection(DcMotorSimple.Direction.REVERSE);
 
         for (DcMotorEx motor : motors) {
@@ -255,7 +257,12 @@ public class MecanumDrivetrain extends MecanumDrive {
         packet.put("yError", lastError.getY());
         packet.put("headingError", lastError.getHeading());
 
-        switch (mode) {
+        packet.put("p0", motorPowers[0]);
+        packet.put("p1", motorPowers[1]);
+        packet.put("p2", motorPowers[2]);
+        packet.put("p3", motorPowers[3]);
+
+        switch (mode){
             case IDLE:
                 // do nothing
                 break;
@@ -394,6 +401,7 @@ public class MecanumDrivetrain extends MecanumDrive {
         leftRear.setPower(v1);
         rightRear.setPower(v2);
         rightFront.setPower(v3);
+        motorPowers = new Double[]{v, v1, v2, v3};
     }
 
     @Override
