@@ -81,9 +81,9 @@ public class StandardTrackingWheelLocalizer extends ThreeTrackingWheelLocalizer 
         //  compensation method
 
         return Arrays.asList(
-                encoderTicksToInches_V(leftEncoder.getRawVelocity()),
-                encoderTicksToInches_V(rightEncoder.getRawVelocity()),
-                encoderTicksToInches_H(frontEncoder.getRawVelocity())
+                encoderTicksToInches_V(leftEncoder.getCorrectedVelocity()),
+                encoderTicksToInches_V(rightEncoder.getCorrectedVelocity()),
+                encoderTicksToInches_H(frontEncoder.getCorrectedVelocity())
         );
     }
 }
