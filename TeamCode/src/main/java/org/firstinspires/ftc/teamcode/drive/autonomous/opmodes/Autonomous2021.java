@@ -16,263 +16,224 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.drive.DriveConstants;
 import org.firstinspires.ftc.teamcode.drive.MecanumDrivetrain;
+import org.firstinspires.ftc.teamcode.opencv.OpenCVHelper;
+import org.firstinspires.ftc.teamcode.opencv.RingDetector;
+import org.firstinspires.ftc.teamcode.opencv.UltimateGoalCVHelper;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+
+import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection.BACK;
 
 /*
  * This is an example of a more complex path to really test the tuning.
  */
 @Autonomous (name = "Autonomous2021")
 public class Autonomous2021 extends LinearOpMode {
-    final double qFieldLength = 72;
-    final double powershotGap = 7.5;
-    Vector2d stackLocation = new Vector2d(-qFieldLength/3, -qFieldLength/2);
-    DcMotorEx intake;
-    DcMotorEx grabber;
-    DcMotorEx launch;
+    OpenCVHelper helper;
+    UltimateGoalCVHelper vision;
+    DcMotor in_front;
+    DcMotor in_back;
+    Servo wobbleGrab;
+
+    DcMotor shooter;
     MecanumDrivetrain drive;
-    PositionState state = PositionState.Start;
-    int ringState = 2;
-    boolean pickedRings;
-    boolean pickedGoal;
-    boolean goalDeposited;
-    @Override
-    public void runOpMode() throws InterruptedException {
+    int state = 2;
+    final boolean RedAlliance = false;
+    int FP;//Field Parity
+    final double sq = 24.0;
+    Pose2d startPose;
+    void initializeRobot(){
+        //helper  = new OpenCVHelper();
+        //vision = new UltimateGoalCVHelper();
+       // helper.initializeOpenCVAndVuforiaCamera(hardwareMap, "Internal" , BACK , false);
+
+        if (RedAlliance) {
+            FP = -1;
+        } else {
+            FP = 1;
+        }
         drive = new MecanumDrivetrain(hardwareMap);
         drive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        drive.setPoseEstimate(new Pose2d(-qFieldLength * (2.0/3.0), -qFieldLength/3, 0.0));
+        startPose = new Pose2d(-5*sq/2 , FP*sq, 0.0);
+        drive.setPoseEstimate(startPose);
+
+        in_front = hardwareMap.dcMotor.get("in_front");
+        in_back = hardwareMap.dcMotor.get("in_back");
+        wobbleGrab = hardwareMap.servo.get("wobbleGrab");
+        shooter = hardwareMap.dcMotor.get("Launch");
+
 
         waitForStart();
 
+        pickUpWobbleGoal();
+
         if (isStopRequested()) return;
-
-        intake = hardwareMap.get(DcMotorEx.class, "Intake");
-        grabber = hardwareMap.get(DcMotorEx.class, "wobbleGrab");
-        launch = hardwareMap.get(DcMotorEx.class , "Launch");
-
-        //grabber.setPower(-0.75);
-        /*
-        Trajectory traj = drive.trajectoryBuilder(drive.getPoseEstimate())
-                .splineTo(new Vector2d(0.0, 0.0), Math.toRadians(45.0))
-                .splineTo(new Vector2d(qFieldLength/2, qFieldLength/2), Math.toRadians(45.0))
-                .build();
-        drive.followTrajectory(traj);
-        */
-        /*
-        DetectStack(drive.getPoseEstimate());
-        CollectStack(drive.getPoseEstimate());
-        DepositWobbleGoal(drive.getPoseEstimate());
-        ShootPowershot(drive.getPoseEstimate());
-        CollectWobbleGoal(drive.getPoseEstimate());
-        DepositWobbleGoal(drive.getPoseEstimate());
-
-         */
-        Park(drive.getPoseEstimate());
-
+    }
+    @Override
+    public void runOpMode() throws InterruptedException {
         drive.setMotorPowers(0,0,0,0);
     }
-    void DetectStack(Pose2d initialPose){
-        if (!pickedGoal) {
-            if (initialPose.getX()<=stackLocation.getX()){
-                if (initialPose.getY()<=-qFieldLength/3){
-                    drive.followTrajectory(drive.trajectoryBuilder(initialPose)
-                            .lineTo(new Vector2d(-qFieldLength*(2./3), -qFieldLength*(2./3)))
-                            .build());
-                }
-                else{
-                    drive.followTrajectory(drive.trajectoryBuilder(initialPose)
-                            .lineTo(new Vector2d(-qFieldLength/6, 0))
-                            .build());
-                }
-            }
-        }
-        Pose2d startPose = drive.getPoseEstimate();
-        Trajectory traj = drive.trajectoryBuilder(startPose)
-                .lineToLinearHeading(getStackMeasurementPose(startPose, 15), setSpeed(15),
-                        new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
-                .build();
-        drive.followTrajectory(traj);
-        state = PositionState.Outside_Stack;
-    }
-    void CollectStack(Pose2d initialPose){
-        TrajectoryBuilder traj = drive.trajectoryBuilder(initialPose);
-        if (state != PositionState.Outside_Stack) {
-            traj.lineToLinearHeading(getStackMeasurementPose(initialPose, 13));
-            drive.followTrajectory(traj.build());
-        }
-        drive.turn(Math.toRadians(-5));
-        //intake.setVelocity(-1200);
-        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate())
-                .forward(16)
-                .build());
-    }
-    void ShootRings(Pose2d initialPose){
-        if (pickedRings){
-            GoToCenter(initialPose);
-        } else {
-            GoToCenterCarefully(initialPose);
-        }
-        TrajectoryBuilder traj = drive.trajectoryBuilder(drive.getPoseEstimate());
-        traj.lineToConstantHeading(new Vector2d(0, -qFieldLength/2.5));
-        drive.followTrajectory(traj.build());
-        state = PositionState.Ring_Goal;
-        /*
-        LaunchRing(9);
-        for (int i = 0; i<3; i++){ // One extra for safety
-            sleep(1000);
-            LaunchRing(9);
-        }
+    ArrayList<Trajectory> oneWobbleGoalAndShoot(Vector2d endPos){
+        ArrayList<Trajectory> list = new ArrayList<Trajectory>();
 
+        TrajectoryBuilder builder2 = drive.trajectoryBuilder(new Pose2d(endPos, Math.toRadians(-90.0)))
+                .lineTo(VectorP(0.0, 3*sq/2));
+
+        list.add(builder2.build());
+
+        /* run between detectStack and builder1
+            drive.turn(FP*atan(1.0/2.0)+(90.0).toRadians)
+            state = getRingState()
+            drive.turn(-(90.0).toRadians)
+        */
+
+        /* run between builder1 and builder2
+        if (RedAlliance == (state == 1)){
+            drive.turn((180.0).toRadians)
+        }
+        dropOffWobbleGoal()
          */
+        /* run between builder2 and builder3
+        drive.turn((-90).toRadians)
+
+        shootRings()
+         */
+        endPos =  list.get(list.size()-1).end().vec();
+
+        TrajectoryBuilder builder3 = drive.trajectoryBuilder(new Pose2d(endPos, Math.toRadians(180.0)))
+                .back(sq/2);
+
+        list.add(builder3.build());
+
+        return list;
     }
-    void ShootPowershot(Pose2d initialPose){
-        if (pickedRings){
-            GoToCenter(initialPose);
-        } else {
-            GoToCenterCarefully(initialPose);
+    ArrayList<Trajectory> doRingStackAndWobbleGoal() {
+        ArrayList<Trajectory> list = new ArrayList<Trajectory>();
+
+        TrajectoryBuilder builder1 = drive.trajectoryBuilder(PoseP(new Vector2d(-3*sq/2, startPose.getY()), 45.0), FP*Math.toRadians(45.0));
+        builder1
+                .addDisplacementMarker( () -> {turnOnIntake();})
+                .splineTo(VectorP(-sq, 3*sq/2), FP*Math.toRadians(45.0));
+
+        switch (state) {
+            case 0: {
+                builder1
+                        .splineTo(VectorP(0.0,  5 * sq/2 ), FP * Math.toRadians(90.0));
+            }
+            break;
+            case 1: {
+                builder1
+                        .splineTo(VectorP(sq,  3 * sq/2), FP*Math.toRadians(-90.0));
+            }
+            break;
+            case 2: {
+                builder1
+                        .splineTo(VectorP(2*sq, 5* sq/2), FP*Math.toRadians(90.0));
+            }
+            break;
         }
-        TrajectoryBuilder traj = drive.trajectoryBuilder(drive.getPoseEstimate());
-        traj.lineToConstantHeading(new Vector2d(0, -qFieldLength/6));
-        state = PositionState.Powershot;
-        //LaunchRing(7);
-        for (int i = 0; i<2; i++){
-            drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate())
-                    .strafeRight(powershotGap)
-                    .build());
-           // LaunchRing(7);
-        }
+        builder1
+                .addDisplacementMarker( () ->{ turnOffIntake() ;});
+        list.add(builder1.build());
+        return list;
     }
-    void GoToCenter(Pose2d initialPose){
-        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate())
-                .lineToLinearHeading(new Pose2d())
-                .build());
+    ArrayList<Trajectory> detectStack()
+    {
+        ArrayList<Trajectory> list = new ArrayList<Trajectory>();
+        TrajectoryBuilder builder1 = drive.trajectoryBuilder(startPose);
+        builder1
+                .lineTo(new Vector2d(-3*sq/2, startPose.getY()));
+        list.add(builder1.build());
+        return list;
     }
-    void GoToCenterCarefully(Pose2d initialPose){
-        if (initialPose.getX()<stackLocation.getX()) {
-            if (initialPose.getY() >= stackLocation.getY()) {
-                drive.followTrajectory(drive.trajectoryBuilder(initialPose)
-                        .lineTo(new Vector2d(-qFieldLength / 3, 0))
-                        .build());
-            } else {
-                drive.followTrajectory(drive.trajectoryBuilder(initialPose)
-                        .lineTo(new Vector2d(-qFieldLength / 6, -qFieldLength * (5/6)))
-                        .build());
+    ArrayList<Trajectory> oneWobbleGoal(Vector2d endPos){
+        ArrayList<Trajectory> list = new ArrayList<Trajectory>();
+
+        TrajectoryBuilder builder2;
+
+        switch (state) {
+            case 0: {
+                builder2 = drive.trajectoryBuilder(new Pose2d(endPos, Math.toRadians(-90.0)), FP*Math.toRadians(-90.0))
+                        .splineTo(VectorP(0.0, 2*sq), FP*Math.toRadians(-90.0))
+                        .splineToConstantHeading(VectorP(sq/2, 3*sq/2), 0.0);
             }
+            break;
+            case 1: {
+                builder2 = drive.trajectoryBuilder(new Pose2d(endPos, Math.toRadians(-90.0)))
+                        .lineTo(new Vector2d(sq/2, endPos.getY()));
+            }
+            break;
+            case 2:{
+                builder2 = drive.trajectoryBuilder(new Pose2d(endPos, Math.toRadians(-90.0)))
+                        .lineTo(new Vector2d(sq/2, endPos.getY()));
+            }
+            break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + state);
         }
-        GoToCenter(drive.getPoseEstimate());
+        list.add(builder2.build());
+        /* run between detectStack and builder1
+        drive.turn(FP*atan(1.0/2.0)+(90.0).toRadians)
+        state = getRingState()
+        drive.turn(-(90.0).toRadians)
+         */
+
+        /* run between builder1 and builder2
+        if (RedAlliance == (state == 1)){
+            drive.turn((180.0).toRadians)
+        }
+        dropOffWobbleGoal()
+         */
+
+        return list;
     }
-    void Park(Pose2d initialPose){
-        if(initialPose.getX()>=-qFieldLength/6){ //lower part of wobble goal deposit
-            if (initialPose.getY()<=-qFieldLength/3){
-                drive.followTrajectory(drive.trajectoryBuilder(initialPose)
-                        .lineToLinearHeading(new Pose2d(initialPose.getX(), 0,0))
-                        .build()
-                );
-            }
-        }
-        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate())
-                .lineTo(new Vector2d(qFieldLength / 6, drive.getPoseEstimate().getY()))
-                .build()
-        );
+    Vector2d VectorP(double x, double y) {
+        return new Vector2d(x, FP * y);
     }
-    void DepositWobbleGoal(Pose2d initialPose){
-        TrajectoryBuilder trajCenter = drive.trajectoryBuilder(initialPose);
-        TrajectoryBuilder trajBox;
-        boolean trajBoxEmpty = false; //Assumed false unless known to be true
-        if (!goalDeposited){
-            if (initialPose.getY()>=stackLocation.getY() || initialPose.getX()>=stackLocation.getX()){
-                trajCenter.lineToLinearHeading(new Pose2d(0, -qFieldLength/3, Math.toRadians(-90)));
-                trajBox = drive.trajectoryBuilder(new Pose2d(0, -qFieldLength/6, Math.toRadians(-90)));
-            }
-            else {
-                trajCenter.splineToSplineHeading(new Pose2d(-qFieldLength * (2./3), -qFieldLength * (2./3), 0),Math.toRadians(45))
-                        .splineToSplineHeading(new Pose2d(0, -60, Math.toRadians(-90)),0);
-                trajBox = drive.trajectoryBuilder(new Pose2d(0, -60, Math.toRadians(-90)));
-                if (ringState == 0) trajBoxEmpty = true;
-            }
-        }
-        else {
-            if (initialPose.getX()<=stackLocation.getX()){
-                trajCenter.splineToConstantHeading(new Vector2d(-qFieldLength/2, -qFieldLength/6), Math.toRadians(-45))
-                        .splineToConstantHeading(new Vector2d(0, -qFieldLength/6), Math.toRadians(-90));
-            }
-            else {
-                trajCenter.lineToLinearHeading(new Pose2d(0, -qFieldLength / 6, Math.toRadians(-90)));
-            }
-            trajBox = drive.trajectoryBuilder(new Pose2d(0, -qFieldLength/6, Math.toRadians(-90)));
-        }
-        switch (ringState){
-            case 0:
-                trajBox.lineToConstantHeading(new Vector2d(0, -60));
-                break;
-            case 1:
-                trajBox.lineToConstantHeading(new Vector2d(15, -40));
-                break;
-            case 2:
-                trajBox.lineToConstantHeading(new Vector2d(45,-60));
-                break;
-        }
-        drive.followTrajectory(trajCenter.build());
-        if (!trajBoxEmpty) drive.followTrajectory(trajBox.build());
+    Pose2d PoseP(double x, double y, double headingDeg ) {
+        return new Pose2d(x, FP * y, FP * Math.toRadians(headingDeg));
+    }
+    Pose2d PoseP(Vector2d VectorP, double headingDeg) {
+        return new Pose2d(VectorP, FP * Math.toRadians(headingDeg));
+    }
+    void dropOffWobbleGoal() {
+        wobbleGrab.setPosition(1);
+    }
+    void pickUpWobbleGoal(){
+        wobbleGrab.setPosition(0);
+    }
+    int getRingState(){
         /*
-        if (!goalDeposited){
-            drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate())
-                    .strafeLeft(5)
-                    .build());
+        //implemented at lab (OpenCV code)
+        switch (vision.detectRings(helper)){
+            case 'A':
+                return 0;
+            case 'B':
+                return 1;
+            case 'C':
+                return 2;
         }
         */
-        //grabber.setPower(0.5);
-        //sleep(750);
-        //grabber.setPower(-0.2);
-        state = PositionState.Goal_Box;
+
+        return 0;
     }
-    void CollectWobbleGoal(Pose2d initialPose){
-        Trajectory trajCenter = drive.trajectoryBuilder(initialPose)
-                .lineToLinearHeading(new Pose2d(0,0, Math.toRadians(-180)))
-                .build();
-        Trajectory trajGoal = drive.trajectoryBuilder(trajCenter.end())
-                .splineTo(new Vector2d(-qFieldLength* (5./8), 0 ), Math.toRadians(-180))
-                .build();
-        drive.followTrajectory(trajCenter);
-        //grabber.setPower(0.2);
-        drive.followTrajectory(trajGoal);
-        drive.followTrajectory(drive.trajectoryBuilder(drive.getPoseEstimate())
-                .strafeLeft(8)
-                .build());
-        //grabber.setPower(-0.75);
+    void turnOnIntake(){
+        in_front.setPower(-1);
+        in_back.setPower(-1);
     }
-    MinVelocityConstraint setSpeed(double speed){
-        return new MinVelocityConstraint(
-                Arrays.asList(
-                        new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
-                        new MecanumVelocityConstraint(speed, DriveConstants.TRACK_WIDTH)
-                )
-        );
+    void turnOffIntake(){
+        in_front.setPower(0);
+        in_back.setPower(0);
     }
-    Pose2d getStackMeasurementPose(Pose2d currentPose, double radius){
-        double d_x =  currentPose.getX()-stackLocation.getX();
-        double d_y =  currentPose.getY()-stackLocation.getY();
-        double scale = radius /
-                Math.hypot(d_x, d_y);
-        double angle = Math.atan(d_y/d_x);
-        if (d_x>0) angle += Math.PI;
-        return new Pose2d(
-                stackLocation.getX() + d_x * scale,
-                stackLocation.getY() + d_y * scale,
-                angle);
-    }
-    void LaunchRing(float speed) {
-        //TODO: FILL THIS IN
-    }
-    enum PositionState {
-        Field, //Arbitrary position
-        Start,
-        Powershot,
-        Ring_Goal,
-        Goal_Box,
-        Outside_Stack
+    void shootRings(){
+        in_back.setPower(-1);
+        shooter.setPower(-1);
+        sleep(5000);
+        in_back.setPower(0);
     }
 }
