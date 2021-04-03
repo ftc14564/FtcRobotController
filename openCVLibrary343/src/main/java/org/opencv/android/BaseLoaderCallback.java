@@ -1,5 +1,6 @@
 package org.opencv.android;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -16,6 +17,7 @@ public abstract class BaseLoaderCallback implements LoaderCallbackInterface {
         mAppContext = AppContext;
     }
 
+    @SuppressLint("LongLogTag")
     public void onManagerConnected(int status)
     {
         switch (status)

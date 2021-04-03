@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.drive.autonomous.opmodes;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.acmerobotics.roadrunner.profile.VelocityConstraint;
@@ -23,17 +24,25 @@ import org.firstinspires.ftc.teamcode.drive.MecanumDrivetrain;
 import org.firstinspires.ftc.teamcode.opencv.OpenCVHelper;
 import org.firstinspires.ftc.teamcode.opencv.RingDetector;
 import org.firstinspires.ftc.teamcode.opencv.UltimateGoalCVHelper;
+import org.opencv.core.Mat;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 
 import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection.BACK;
+import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection.FRONT;
 
 /*
  * This is an example of a more complex path to really test the tuning.
  */
+@Config
 @Autonomous (name = "Autonomous2021")
 public class Autonomous2021 extends LinearOpMode {
+    //Configurables
+    public static int visionEnabled = 1; //Stand in for boolean
+    public static double shooterPower = -0.9;
+
     OpenCVHelper helper;
     UltimateGoalCVHelper vision;
     DcMotor in_front;
@@ -48,9 +57,11 @@ public class Autonomous2021 extends LinearOpMode {
     final double sq = 24.0;
     Pose2d startPose;
     void initializeRobot(){
-        //helper  = new OpenCVHelper();
-        //vision = new UltimateGoalCVHelper();
-       // helper.initializeOpenCVAndVuforiaCamera(hardwareMap, "Internal" , BACK , false);
+        if (visionEnabled == 1){
+            helper  = new OpenCVHelper();
+            helper.initializeOpenCVAndVuforiaCamera(hardwareMap, "Internal" , FRONT , false);
+            vision = new UltimateGoalCVHelper();
+        }
 
         if (RedAlliance) {
             FP = -1;
@@ -78,11 +89,26 @@ public class Autonomous2021 extends LinearOpMode {
     public void runOpMode() throws InterruptedException {
         drive.setMotorPowers(0,0,0,0);
     }
+    ArrayList<Trajectory> shootPowershot(){
+
+        ArrayList<Trajectory> list = new ArrayList<>();
+        TrajectoryBuilder builder1 = drive.trajectoryBuilder(startPose);
+        builder1
+                .lineToLinearHeading(PoseP(-1.4*sq, 0.4*sq, -188.3));
+        list.add(builder1.build());
+
+        TrajectoryBuilder builder2 = drive.trajectoryBuilder(list.get(list.size()-1).end());
+            builder2.lineToLinearHeading(PoseP(-sq *(3.0/4), sq/2, -180.0));
+
+         list.add(builder2.build());
+
+        return list;
+    }
     ArrayList<Trajectory> oneWobbleGoalAndShoot(Vector2d endPos){
         ArrayList<Trajectory> list = new ArrayList<Trajectory>();
 
         TrajectoryBuilder builder2 = drive.trajectoryBuilder(new Pose2d(endPos, Math.toRadians(-90.0)))
-                .lineTo(VectorP(0.0, 3*sq/2));
+                .lineTo(VectorP(-sq/2, 3*sq/2));
 
         list.add(builder2.build());
 
@@ -106,11 +132,50 @@ public class Autonomous2021 extends LinearOpMode {
         endPos =  list.get(list.size()-1).end().vec();
 
         TrajectoryBuilder builder3 = drive.trajectoryBuilder(new Pose2d(endPos, Math.toRadians(180.0)))
-                .back(sq/2);
+                .back(sq);
 
         list.add(builder3.build());
 
         return list;
+    }
+    ArrayList<Trajectory> doRingStackAndWobbleGoalPreload() {
+        ArrayList<Trajectory> list = new ArrayList<Trajectory>();
+
+        TrajectoryBuilder builder1 = drive.trajectoryBuilder(PoseP(new Vector2d(-3*sq/2, startPose.getY()), 0.0), FP*Math.toRadians(0.0));
+        builder1
+                //.addDisplacementMarker( () -> {turnOnIntake();})
+                .splineTo(VectorP(-sq, sq*(3.0/4)), 0.0);
+               // .splineTo(VectorP(-sq/2, sq), FP*Math.toRadians(0.0));
+
+        switch (state) {
+            case 0: {
+                builder1
+                        .splineTo(VectorP(0.0,  5 * sq/2 ), FP * Math.toRadians(90.0));
+            }
+            break;
+            case 1: {
+                builder1
+                        .splineTo(VectorP(sq,  3 * sq/2), FP*Math.toRadians(-90.0));
+            }
+            break;
+            case 2: {
+                builder1
+                        .splineTo(VectorP(2*sq, 5* sq/2), FP*Math.toRadians(90.0));
+            }
+            break;
+        }
+        /*
+        builder1
+                .addDisplacementMarker( () ->{ turnOffIntake() ;});
+                */
+
+        list.add(builder1.build());
+        return list;
+        /* run between detectStack and builder1
+            drive.turn(FP*atan(1.0/2.0)+(90.0).toRadians)
+            state = getRingState()
+            drive.turn(-drive.getPoseEstimate.getHeading())
+        */
     }
     ArrayList<Trajectory> doRingStackAndWobbleGoal() {
         ArrayList<Trajectory> list = new ArrayList<Trajectory>();
@@ -149,6 +214,41 @@ public class Autonomous2021 extends LinearOpMode {
         builder1
                 .lineTo(new Vector2d(-3*sq/2, startPose.getY()));
         list.add(builder1.build());
+        return list;
+    }
+    ArrayList<Trajectory> doWobbleGoalAfterPickup(Pose2d endPose) {
+        ArrayList<Trajectory> list = new ArrayList<>();
+        TrajectoryBuilder builder1 = drive.trajectoryBuilder(endPose);
+        switch (state) {
+            case 0: {
+                builder1
+                        .lineTo(VectorP(0.0, 5 * sq / 2));
+            }
+            break;
+            case 1: {
+                builder1
+                        .lineTo(VectorP(sq, 3 * sq / 2));
+            }
+            break;
+            case 2: {
+                builder1
+                        .lineTo(VectorP(2 * sq, 5 * sq / 2));
+            }
+            break;
+        }
+        list.add(builder1.build());
+        return list;
+    }
+    ArrayList<Trajectory> pickupWobbleGoal(Pose2d endPose){
+        ArrayList<Trajectory> list = new ArrayList<>();
+        TrajectoryBuilder builder1 = drive.trajectoryBuilder(endPose);
+            builder1.lineTo(endPose.vec().minus(new Vector2d(10.0, 0)));
+        list.add(builder1.build());
+        //turn 180 deg
+        TrajectoryBuilder builder2 = drive.trajectoryBuilder(
+                new Pose2d(list.get(list.size()-1).end().vec(), Math.toRadians(90.0)));
+            builder2.lineTo(new Vector2d(-1.5*sq, 2.25*sq));
+        list.add(builder2.build());
         return list;
     }
     ArrayList<Trajectory> oneWobbleGoal(Vector2d endPos){
@@ -208,18 +308,28 @@ public class Autonomous2021 extends LinearOpMode {
         wobbleGrab.setPosition(0);
     }
     int getRingState(){
-        /*
-        //implemented at lab (OpenCV code)
-        switch (vision.detectRings(helper)){
-            case 'A':
-                return 0;
-            case 'B':
-                return 1;
-            case 'C':
-                return 2;
+        if (visionEnabled == 1){
+            //implemented at lab (OpenCV code)
+            char c = '?';
+            for (int i = 0; i<5; i++){
+                if (c=='?'){
+                    c = vision.detectRings(helper);
+                    sleep(100);
+                }
+            }
+            switch (c){
+                case 'A':
+                    drive.sendTelemetryToDashboard("RingState", 0.0);
+                    return 0;
+                case 'B':
+                    drive.sendTelemetryToDashboard("RingState", 1.0);
+                    return 1;
+                case 'C':
+                    drive.sendTelemetryToDashboard("RingState", 2.0);
+                    return 2;
+            }
         }
-        */
-
+        drive.sendTelemetryToDashboard("RingState", -1.0);
         return 0;
     }
     void turnOnIntake(){
@@ -231,9 +341,10 @@ public class Autonomous2021 extends LinearOpMode {
         in_back.setPower(0);
     }
     void shootRings(){
-        in_back.setPower(-1);
-        shooter.setPower(-1);
-        sleep(5000);
-        in_back.setPower(0);
+        in_front.setPower(-1);
+        shooter.setPower(shooterPower);
+        sleep(3000);
+        in_front.setPower(0);
+        shooter.setPower(0);
     }
 }

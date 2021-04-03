@@ -28,7 +28,7 @@ import static java.lang.Math.atan;
 
             trajectories.addAll(oneWobbleGoalAndShoot(trajectories.get(trajectories.size()-1).end().vec()));
 
-            drive.followTrajectory(trajectories.get(1));
+            drive.followTrajectory(trajectories.get(1)) ;
 
             if (RedAlliance == (state == 1)){
                 drive.turn(Math.toRadians(180.0));
@@ -37,7 +37,7 @@ import static java.lang.Math.atan;
 
             drive.followTrajectory(trajectories.get(2));
 
-            drive.turn(Math.toRadians(-90.0));
+            drive.turn(Math.toRadians(-110.0)); //theoretically 90 deg
             shootRings();
 
             drive.followTrajectory(trajectories.get(3));

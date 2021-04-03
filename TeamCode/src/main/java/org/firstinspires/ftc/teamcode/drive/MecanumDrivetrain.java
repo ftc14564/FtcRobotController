@@ -41,8 +41,10 @@ import org.firstinspires.ftc.teamcode.util.LynxModuleUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import static org.firstinspires.ftc.teamcode.drive.DriveConstants.MAX_ACCEL;
 import static org.firstinspires.ftc.teamcode.drive.DriveConstants.MAX_ANG_ACCEL;
@@ -78,6 +80,8 @@ public class MecanumDrivetrain extends MecanumDrive {
         TURN,
         FOLLOW_TRAJECTORY
     }
+
+    private Map<String, Double> customTelemetry = new HashMap<String, Double>();
 
     private FtcDashboard dashboard;
     private NanoClock clock;
@@ -269,6 +273,10 @@ public class MecanumDrivetrain extends MecanumDrive {
         packet.put("e1", local.ticks_inch[1]);
         packet.put("e2", local.ticks_inch[2]);
 
+        for(String label : customTelemetry.keySet()){
+            packet.put(label, customTelemetry.get(label));
+        }
+
         switch (mode){
             case IDLE:
                 // do nothing
@@ -414,5 +422,15 @@ public class MecanumDrivetrain extends MecanumDrive {
     @Override
     public double getRawExternalHeading() {
         return imu.getAngularOrientation().firstAngle;
+    }
+
+
+    public void sendTelemetryToDashboard(String label, double value){
+        customTelemetry.put(label, value);
+    }
+    public void forceSendTelemetryToDashboard(String label, double value){
+        TelemetryPacket packet = new TelemetryPacket();
+        packet.put(label, value);
+        dashboard.sendTelemetryPacket(packet);
     }
 }
