@@ -31,12 +31,15 @@ public class StandardTrackingWheelLocalizer extends ThreeTrackingWheelLocalizer 
     public static double TICKS_PER_REV_H = 8192;
     public static double WHEEL_RADIUS_V = 0.5; // in
     public static double WHEEL_RADIUS_H = 0.5; // in
-    public static double GEAR_RATIO = 1; // output (wheel) speed / input (encoder) speed
-
-    public static double LATERAL_DISTANCE = 8.25; // in; distance between the left and right wheels
-    public static double FORWARD_OFFSET = 7; // in; offset of the lateral wheel
+    public static double GEAR_RATIO = 24.0/17.0; // output (wheel) speed / input (encoder) speed
+    //normally gear ratio, but we will use for traction rate
+    //this probably needs to be fixed mechanically
+    public static double LATERAL_DISTANCE = 8.25; // in; distance between the left and right wheels (needs to be tuned probably)
+    public static double FORWARD_OFFSET = -7; // in; offset of the lateral wheel (needs to be tuned probably)
 
     private Encoder leftEncoder, rightEncoder, frontEncoder;
+
+    public Double[] ticks_inch = new Double[]{0.0, 0.0, 0.0};
 
     public StandardTrackingWheelLocalizer(HardwareMap hardwareMap) {
         super(Arrays.asList(
@@ -62,11 +65,12 @@ public class StandardTrackingWheelLocalizer extends ThreeTrackingWheelLocalizer 
     @NonNull
     @Override
     public List<Double> getWheelPositions() {
-        return Arrays.asList(
+        ticks_inch = new Double[]{
                 encoderTicksToInches_V(leftEncoder.getCurrentPosition()),
                 encoderTicksToInches_V(rightEncoder.getCurrentPosition()),
                 encoderTicksToInches_H(frontEncoder.getCurrentPosition())
-        );
+        };
+        return Arrays.asList(ticks_inch);
     }
 
     @NonNull
@@ -77,9 +81,9 @@ public class StandardTrackingWheelLocalizer extends ThreeTrackingWheelLocalizer 
         //  compensation method
 
         return Arrays.asList(
-                encoderTicksToInches_V(leftEncoder.getRawVelocity()),
-                encoderTicksToInches_V(rightEncoder.getRawVelocity()),
-                encoderTicksToInches_H(frontEncoder.getRawVelocity())
+                encoderTicksToInches_V(leftEncoder.getCorrectedVelocity()),
+                encoderTicksToInches_V(rightEncoder.getCorrectedVelocity()),
+                encoderTicksToInches_H(frontEncoder.getCorrectedVelocity())
         );
     }
 }

@@ -13,6 +13,7 @@ import com.acmerobotics.roadrunner.drive.MecanumDrive;
 import com.acmerobotics.roadrunner.followers.HolonomicPIDVAFollower;
 import com.acmerobotics.roadrunner.followers.TrajectoryFollower;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
+import com.acmerobotics.roadrunner.localization.Localizer;
 import com.acmerobotics.roadrunner.profile.MotionProfile;
 import com.acmerobotics.roadrunner.profile.MotionProfileGenerator;
 import com.acmerobotics.roadrunner.profile.MotionState;
@@ -61,10 +62,10 @@ import static org.firstinspires.ftc.teamcode.drive.DriveConstants.kV;
 @Config
 public class MecanumDrivetrain extends MecanumDrive {
     //TODO: Fix the coefficients if necessary
-    public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(0.8, 0, 0);
+    public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(1, 0, 0);
     public static PIDCoefficients HEADING_PID = new PIDCoefficients(1, 0, 0);
 
-    public static double LATERAL_MULTIPLIER = 1;
+    public static double LATERAL_MULTIPLIER = 1.2;
 
     public static double VX_WEIGHT = 1;
     public static double VY_WEIGHT = 1;
@@ -87,6 +88,7 @@ public class MecanumDrivetrain extends MecanumDrive {
     private MotionProfile turnProfile;
     private double turnStart;
 
+    private Double[] motorPowers;
     private TrajectoryVelocityConstraint velConstraint;
     private TrajectoryAccelerationConstraint accelConstraint;
     private TrajectoryFollower follower;
@@ -104,11 +106,12 @@ public class MecanumDrivetrain extends MecanumDrive {
     public MecanumDrivetrain(HardwareMap hardwareMap) {
         super(kV, kA, kStatic, TRACK_WIDTH, TRACK_WIDTH, LATERAL_MULTIPLIER);
 
-        FtcDashboard.start();
         dashboard = FtcDashboard.getInstance();
         dashboard.setTelemetryTransmissionInterval(25);
 
         clock = NanoClock.system();
+
+        motorPowers = new Double[]{0.0, 0.0, 0.0, 0.0};
 
         mode = Mode.IDLE;
 
@@ -121,7 +124,7 @@ public class MecanumDrivetrain extends MecanumDrive {
         ));
         accelConstraint = new ProfileAccelerationConstraint(MAX_ACCEL);
         follower = new HolonomicPIDVAFollower(TRANSLATIONAL_PID, TRANSLATIONAL_PID, HEADING_PID,
-                new Pose2d(0.5, 0.5, Math.toRadians(5.0)), 0.5);
+                new Pose2d(0.5, 0.5, Math.toRadians(5.0)), 1.5);
 
         poseHistory = new LinkedList<>();
 
@@ -150,8 +153,8 @@ public class MecanumDrivetrain extends MecanumDrive {
 
         motors = Arrays.asList(leftFront, leftRear, rightRear, rightFront);
 
-        leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
-        leftRear.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightFront.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightRear.setDirection(DcMotorSimple.Direction.REVERSE);
 
         for (DcMotorEx motor : motors) {
             MotorConfigurationType motorConfigurationType = motor.getMotorType().clone();
@@ -245,6 +248,8 @@ public class MecanumDrivetrain extends MecanumDrive {
         TelemetryPacket packet = new TelemetryPacket();
         Canvas fieldOverlay = packet.fieldOverlay();
 
+        StandardTrackingWheelLocalizer local = (StandardTrackingWheelLocalizer) getLocalizer();
+
         packet.put("mode", mode);
 
         packet.put("x", currentPose.getX());
@@ -255,7 +260,16 @@ public class MecanumDrivetrain extends MecanumDrive {
         packet.put("yError", lastError.getY());
         packet.put("headingError", lastError.getHeading());
 
-        switch (mode) {
+        packet.put("p0", motorPowers[0]);
+        packet.put("p1", motorPowers[1]);
+        packet.put("p2", motorPowers[2]);
+        packet.put("p3", motorPowers[3]);
+
+        packet.put("e0", local.ticks_inch[0]);
+        packet.put("e1", local.ticks_inch[1]);
+        packet.put("e2", local.ticks_inch[2]);
+
+        switch (mode){
             case IDLE:
                 // do nothing
                 break;
@@ -394,6 +408,7 @@ public class MecanumDrivetrain extends MecanumDrive {
         leftRear.setPower(v1);
         rightRear.setPower(v2);
         rightFront.setPower(v3);
+        motorPowers = new Double[]{v, v1, v2, v3};
     }
 
     @Override

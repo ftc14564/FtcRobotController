@@ -4,10 +4,13 @@ import android.util.Log;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import org.firstinspires.ftc.teamcode.opencv.OpenCVHelper;
 import org.firstinspires.ftc.teamcode.opencv.UltimateGoalCVHelper;
+
+import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.hardwareMap;
 import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection.BACK;
 
 @Autonomous(name = "RingAutonomous")
-public class RingAutonomous extends  Teleop2021 {
+public class RingAutonomous extends
+        gary {
 
     private static final String TAG = "RingAutonomous";
 
