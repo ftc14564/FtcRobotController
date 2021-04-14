@@ -36,13 +36,13 @@ public enum WallType{
     Pose2d offsetPosition(double offset){
         switch(this){
             case TOP:
-                return new Pose2d(72.0-offset, 0.0);
+                return new Pose2d(LEFT.positiveOffset-offset, 0.0);
             case LEFT:
-                return new Pose2d(0.0, 72.0-offset);
+                return new Pose2d(0.0, TOP.positiveOffset-offset);
             case BOTTOM:
-                return new Pose2d(-72.0+offset, 0.0);
+                return new Pose2d(LEFT.negativeOffset+offset, 0.0);
             case RIGHT:
-                return new Pose2d(0.0, -72.0+offset);
+                return new Pose2d(0.0, TOP.negativeOffset+offset);
         }
         return new Pose2d();
     }

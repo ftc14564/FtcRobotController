@@ -31,11 +31,13 @@ import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType;
 
+import org.firstinspires.ftc.teamcode.drive.autonomous.distancesensor.DistanceSensorLocalization;
 import org.firstinspires.ftc.teamcode.util.DashboardUtil;
 import org.firstinspires.ftc.teamcode.util.LynxModuleUtil;
 
@@ -46,6 +48,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import static java.lang.Math.PI;
 import static org.firstinspires.ftc.teamcode.drive.DriveConstants.MAX_ACCEL;
 import static org.firstinspires.ftc.teamcode.drive.DriveConstants.MAX_ANG_ACCEL;
 import static org.firstinspires.ftc.teamcode.drive.DriveConstants.MAX_ANG_VEL;
@@ -66,6 +69,8 @@ public class MecanumDrivetrain extends MecanumDrive {
     //TODO: Fix the coefficients if necessary
     public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(1, 0, 0);
     public static PIDCoefficients HEADING_PID = new PIDCoefficients(1, 0, 0);
+
+    public static DistanceSensorLocalization dsl;
 
     public static double LATERAL_MULTIPLIER = 1.2;
 
@@ -120,7 +125,7 @@ public class MecanumDrivetrain extends MecanumDrive {
         mode = Mode.IDLE;
 
         turnController = new PIDFController(HEADING_PID);
-        turnController.setInputBounds(0, 2 * Math.PI);
+        turnController.setInputBounds(0, 2 * PI);
 
         velConstraint = new MinVelocityConstraint(Arrays.asList(
                 new AngularVelocityConstraint(MAX_ANG_VEL),
@@ -149,6 +154,15 @@ public class MecanumDrivetrain extends MecanumDrive {
         // TODO: if your hub is mounted vertically, remap the IMU axes so that the z-axis points
         // upward (normal to the floor) using a command like the following:
         // BNO055IMUUtil.remapAxes(imu, AxesOrder.XYZ, AxesSigns.NPN);
+
+        HashMap<DistanceSensor, Pose2d> distanceSensors = new HashMap<>();
+
+        distanceSensors.put(hardwareMap.get(DistanceSensor.class, "DS_rightFront"), new Pose2d(3.0,-7.0,-PI/2));
+        distanceSensors.put(hardwareMap.get(DistanceSensor.class, "DS_rightRear"), new Pose2d(-3.0,-7.0,-PI/2));
+        distanceSensors.put(hardwareMap.get(DistanceSensor.class, "DS_leftFront"), new Pose2d(3.0,7.0,PI/2));
+        distanceSensors.put(hardwareMap.get(DistanceSensor.class, "DS_leftRear"), new Pose2d(-3.0,7.0,PI/2));
+
+        dsl = new DistanceSensorLocalization(distanceSensors, 72.0, -72.0, 72.0, -24.0);
 
         leftFront = hardwareMap.get(DcMotorEx.class, "leftFront");
         leftRear = hardwareMap.get(DcMotorEx.class, "leftRear");
@@ -236,8 +250,7 @@ public class MecanumDrivetrain extends MecanumDrive {
         }
         throw new AssertionError();
     }
-
-    public void update() {
+    public TelemetryPacket fillPacket(){
         updatePoseEstimate();
 
         Pose2d currentPose = getPoseEstimate();
@@ -250,7 +263,6 @@ public class MecanumDrivetrain extends MecanumDrive {
         }
 
         TelemetryPacket packet = new TelemetryPacket();
-        Canvas fieldOverlay = packet.fieldOverlay();
 
         StandardTrackingWheelLocalizer local = (StandardTrackingWheelLocalizer) getLocalizer();
 
@@ -273,9 +285,36 @@ public class MecanumDrivetrain extends MecanumDrive {
         packet.put("e1", local.ticks_inch[1]);
         packet.put("e2", local.ticks_inch[2]);
 
+//       // ArrayList<Double> distances = dsl.getDistances();
+//
+//        packet.put("DS-rf", distances.get(0));
+//        packet.put("DS-rb", distances.get(1));
+//        packet.put("DS-lf", distances.get(2));
+//        packet.put("DS-lb", distances.get(3));
+//
+//        Pose2d pose = dsl.refinePosition(currentPose);
+//
+//        packet.put("DS X", pose.getX());
+//        packet.put("DS Y", pose.getY());
+//        packet.put("DS Heading", pose.getHeading());
+
         for(String label : customTelemetry.keySet()){
             packet.put(label, customTelemetry.get(label));
         }
+        return packet;
+    }
+    public void update() {
+        TelemetryPacket packet = fillPacket();
+
+        Pose2d currentPose = getPoseEstimate();
+
+        poseHistory.add(currentPose);
+
+        if (POSE_HISTORY_LIMIT > -1 && poseHistory.size() > POSE_HISTORY_LIMIT) {
+            poseHistory.removeFirst();
+        }
+
+        Canvas fieldOverlay = packet.fieldOverlay();
 
         switch (mode){
             case IDLE:

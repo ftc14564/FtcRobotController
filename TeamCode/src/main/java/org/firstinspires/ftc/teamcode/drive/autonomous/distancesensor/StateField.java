@@ -8,17 +8,25 @@ import java.util.HashMap;
 
 import kotlin.Pair;
 
+import static java.lang.Math.PI;
+
 public class StateField {
     HashMap<WallType, Pair<Double, Double>> stateLines;
     HashMap<WallType, Pair<Double, Double>> stateZones;
-    StateField(double errorMargin){
-
+    void reset(){
+        stateLines.clear();
+        stateZones.clear();
     }
     void addStateZone(Vector2d hitpoint, WallType wall){
-
+        //literally does nothing since there's no reason to implement it yet //TODO: implement this
     }
     void addStateLine(Vector2d hitpoint1, Vector2d hitpoint2, WallType wall){
-
+        if(hitpoint1.angle()<hitpoint2.angle()){
+            addStateLine(hitpoint2, hitpoint1, wall);
+        }
+        Vector2d distance = hitpoint1.minus(hitpoint2);
+        double angle = distance.angleBetween(hitpoint2);
+        stateLines.put(wall, new Pair<>(Math.sin(angle)*hitpoint2.norm(), distance.angle()));
     }
     Pose2d getStateLinePosition(WallType wall){
         Pose2d averagePose = wall.offsetPosition(stateLines.get(wall).getFirst());

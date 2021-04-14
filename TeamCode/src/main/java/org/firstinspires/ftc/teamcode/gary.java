@@ -123,13 +123,6 @@ public class gary extends LinearOpMode {
                 shooter.setPower(0);
 
             }
-            TelemetryPacket packet = new TelemetryPacket();
-            packet.put("Lx", gamepad1.left_stick_x);
-            packet.put("Rx", gamepad1.right_stick_x);
-            packet.put("Ly", gamepad1.left_stick_y);
-            packet.put("Ry", gamepad1.right_stick_y);
-            dashboard.sendTelemetryPacket(packet);
-
             if (gamepad2.dpad_left) {
                 wobbleGrab.setPosition(0);
 
@@ -144,6 +137,7 @@ public class gary extends LinearOpMode {
             in_back.setPower(0);
             telemetry.addData("shooter power: ", shooter.getPower());
             telemetry.update();
+            drive.update(); //comment this out during real runs
         }
     }
     }
