@@ -9,6 +9,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import static java.lang.Math.PI;
+import static java.lang.Math.abs;
+import static java.lang.Math.cos;
 import static java.lang.Math.tan;
 
 public class DistanceSensorLocalization {
@@ -19,42 +22,40 @@ public class DistanceSensorLocalization {
         WallType.setOffsets(topOffset, bottomOffset, leftOffset, rightOffset); //should probably be hardcoded in
     }
     double getDistance(DistanceSensor ds, int trialCount){ //Kalman filter here?
-        double distance = -1.0;
-        for(int i = 0; i<trialCount; i++){
-            double measuredDistance = ds.getDistance(DistanceUnit.INCH);
-            if(measuredDistance>80.0) { //greater than measureable amnt (tune)
-                distance*=2;
-            }else {
-                distance += measuredDistance;
-            }
+        double dist = ds.getDistance(DistanceUnit.INCH);
+        if (dist>80.0){
+            return -1.0;
         }
-        distance*=1.0/trialCount;
-        return distance;
+        return dist;
+//        return Math.abs(theoreticalDistance(new Pose2d(test.pose.vec().plus(
+//                dsDict.get(ds).vec().rotated(test.pose.getHeading())),
+//                dsDict.get(ds).getHeading()+test.pose.getHeading())));
     }
-    public ArrayList<Double> getDistances(){
-        ArrayList<Double> list = new ArrayList<>();
-        for (DistanceSensor ds: dsDict.keySet()){
-            list.add(getDistance(ds, 5));
-        }
-        return list;
+    double theoreticalDistance(Pose2d dsPose){
+        WallType wall = getWallFromDSPose(dsPose);
+        double perpendicular = wall.getPerpendicular(dsPose);
+        double angleDiff = getAngleDiff(wall.heading, dsPose.getHeading());
+        return (perpendicular/Math.cos(angleDiff));
     }
     public Pose2d refinePosition(Pose2d estimatedPose){
-        if(true) {
-            return new Pose2d();
-        }
         StateField stateField = new StateField();
         HashMap<Vector2d, WallType> hitPoints = new HashMap<>();
         HashMap<DistanceSensor, Double> distances = new HashMap<>();
         for(DistanceSensor ds: dsDict.keySet()){
             double testDistance = getDistance(ds, 5);
-            if(testDistance!=-1.0){
+            if(testDistance!=-1.0){ //TODO: check for validity using a different indicator than -1, redo
                 distances.put(ds, testDistance);
             }
         }
         for(DistanceSensor ds : distances.keySet()){
-            Pose2d dsAbsolutePose = dsDict.get(ds).plus(estimatedPose);
-            hitPoints.put(Vector2d.polar(distances.get(ds), dsAbsolutePose.getHeading()).plus(estimatedPose.vec()),
-                    getWallFromDSPose(dsDict.get(ds)));
+            Pose2d dsRelativePose = dsDict.get(ds);
+            Pose2d dsAbsolutePose = dsRelativePose.plus(estimatedPose);
+            Vector2d hitpoint = Vector2d.polar(distances.get(ds), dsRelativePose.getHeading()).plus(dsRelativePose.vec());
+            System.out.println(ds.getDeviceName());
+            System.out.println(hitpoint);
+            //System.out.println(dsRelativePose);
+            System.out.println(getWallFromDSPose(dsAbsolutePose));
+            hitPoints.put(hitpoint, getWallFromDSPose(dsAbsolutePose));
         }
         for (WallType wall : WallType.values()){
             ArrayList<Vector2d> hitpointList = new ArrayList<>();
@@ -66,25 +67,68 @@ public class DistanceSensorLocalization {
             if (hitpointList.size()>=2){
                 stateField.addStateLine(hitpointList.get(0), hitpointList.get(1), wall);
                 //TODO: make a more accurate implementation for 3+ measurements
-            }else{
+            }else if (hitpointList.size()!=0){
                 stateField.addStateZone(hitpointList.get(0), wall);
             }
         }
-        return stateField.getPredictedPose(estimatedPose);
+        Pose2d testPose = stateField.getPredictedPose(estimatedPose);
+        return simplifyPoseHeading(testPose);//simplifyPoseHeading(testPose.plus(new Pose2d(0.0,0.0,
+                //lowestHeading(estimatedPose.getHeading(), testPose.getHeading()))));
     }
     WallType getWallFromDSPose(Pose2d pose){
         for(WallType wall : WallType.values()){
             if(checkWallCollision(wall, pose)){
+                //System.out.println(pose);
                 return wall;
             }
         }
         return null;
     }
-
     boolean checkWallCollision(WallType wall, Pose2d pose){
-       double theta = pose.getHeading() - wall.heading;
-       double collisionOffset = tan(theta)*wall.getPerpendicular(pose);
-       return wall.inBounds(collisionOffset);
+        //System.out.println("CHECK COLLISION");
+        //System.out.println(wall);
+        double angle = modularAngle(pose.getHeading());
+        Vector2d[] endPoints = wall.endPoints();
+        //System.out.println((endPoints[0].minus(pose.vec())).angle());
+        //System.out.println((endPoints[1].minus(pose.vec())).angle());
+        return isBetween(angle, (endPoints[0].minus(pose.vec())).angle(), (endPoints[1].minus(pose.vec())).angle());
+        //TODO: might have some overlap issues, leverage the fact that the endpoints are in counter-clockwise order
     }
-
+    boolean isBetween(double angle, double a, double b){
+        //Two cases, cross over or not
+        if (b>a){ //no crossover
+            return (angle>=modularAngle(a) && angle<=modularAngle(b));
+        }else { //crossover
+            return (angle>=modularAngle(a) || angle<=modularAngle(b));
+        }
+    }
+    static double getAngleDiff(double a, double b){
+        if (a<b){
+            return getAngleDiff(b, a);
+        }
+        double diff=(a-b)%(2*PI);
+        if(diff>PI){
+            return 2*PI-diff;
+        }
+        return diff;
+    }
+    Pose2d simplifyPoseHeading(Pose2d pose){
+        return new Pose2d(pose.getX(), pose.getY(), pose.getHeading()%(2*PI));
+    }
+    double lowestHeading(double estimatedPoseHeading, double testPoseHeading){
+        double lowestDiff = Double.MAX_VALUE;
+        int iValue = -1;
+        for(int i =0; i<8; i++){
+            if (modularAngle(getAngleDiff(testPoseHeading+i*PI/2, estimatedPoseHeading))<lowestDiff){
+                iValue = i;
+            }
+        }
+        return testPoseHeading+iValue*PI/4;
+    }
+    double modularAngle(double angle){
+        if (angle<0.0){
+            return 2*PI+angle%(2*PI);
+        }
+        return angle%(2*PI);
+    }
 }

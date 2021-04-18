@@ -3,16 +3,13 @@ package org.firstinspires.ftc.teamcode.drive.autonomous.distancesensor;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 
 import kotlin.Pair;
 
-import static java.lang.Math.PI;
-
 public class StateField {
-    HashMap<WallType, Pair<Double, Double>> stateLines;
-    HashMap<WallType, Pair<Double, Double>> stateZones;
+    HashMap<WallType, Pair<Double, Double>> stateLines = new HashMap<>();
+    HashMap<WallType, Pair<Double, Double>> stateZones = new HashMap<>();
     void reset(){
         stateLines.clear();
         stateZones.clear();
@@ -23,18 +20,32 @@ public class StateField {
     void addStateLine(Vector2d hitpoint1, Vector2d hitpoint2, WallType wall){
         if(hitpoint1.angle()<hitpoint2.angle()){
             addStateLine(hitpoint2, hitpoint1, wall);
+            return;
         }
+        System.out.print("Wall ");
+        System.out.println(wall);
+        System.out.print("H1 ");
+        System.out.println(hitpoint1);
+        System.out.print("H2 ");
+        System.out.println(hitpoint2);
         Vector2d distance = hitpoint1.minus(hitpoint2);
         double angle = distance.angleBetween(hitpoint2);
-        stateLines.put(wall, new Pair<>(Math.sin(angle)*hitpoint2.norm(), distance.angle()));
+        Pair line = new Pair<>(Math.sin(angle)*hitpoint2.norm(), -wall.heading+Math.PI/2+distance.angle());
+        System.out.println("Heading ");
+        System.out.println(-Math.toDegrees(wall.heading-Math.PI/2-distance.angle()));
+        System.out.println("Offset ");
+        System.out.println(Math.sin(angle)*hitpoint2.norm());
+        stateLines.put(wall, line);
     }
-    Pose2d getStateLinePosition(WallType wall){
+    Pose2d getStateLinePosition(){
+        WallType wall = (WallType) stateLines.keySet().toArray()[0];
         Pose2d averagePose = wall.offsetPosition(stateLines.get(wall).getFirst());
         averagePose = averagePose.plus(new Pose2d(0.0, 0.0, stateLines.get(wall).getSecond()));
         //TODO: might have to cross-reference with the current pose for the real heading
         // (theoretically both normal and reversed should be the same)
-        if(stateLines.keySet().contains(wall.reverse())){
-            averagePose = (averagePose).plus(wall.reverse().offsetPosition(stateLines.get(wall.reverse()).getFirst())).div(2.0);
+        if(stateLines.containsKey(wall.reverse())){
+            averagePose = (averagePose).plus(wall.reverse().offsetPosition(stateLines.get(wall.reverse()).getFirst()))
+                    .plus(new Pose2d(0.0, 0.0, stateLines.get(wall.reverse()).getSecond())).div(2.0);
             stateLines.remove(wall);
             stateLines.remove(wall.reverse());
         } else {
@@ -46,22 +57,31 @@ public class StateField {
         if (stateLines.size()==0){
             return currentPose; //TODO: Replace with complex angular positioning (hitpoints alone?)
         }
-        Pose2d linearPosAngle = getStateLinePosition((WallType) stateLines.keySet().toArray()[0]);
+        Pose2d stateLinePose = getStateLinePosition();
         if (stateLines.size()!=0){
-            return mergePoses( getStateLinePosition((WallType) stateLines.keySet().toArray()[0]), linearPosAngle);
+            return mergePoses(getStateLinePosition(), stateLinePose);
         } else {
             if (stateZones.size()==0){
-                return mergePoses(currentPose, linearPosAngle);
+                return mergePoses(currentPose, stateLinePose);
             }else{
-                return mergePoses(currentPose, linearPosAngle); //TODO: Replace with zone positioning
+                return mergePoses(currentPose, stateLinePose); //TODO: Replace with zone positioning
             }
         }
     }
     Pose2d mergePoses(Pose2d currentPose, Pose2d desiredPose){
+        //TODO: replace desired pose unknown symbol from 0.0 to another value to remove edge cases
+        Pose2d finalPose = new Pose2d();
         if(desiredPose.getX() == 0.0){
-            return new Pose2d(currentPose.getX(), desiredPose.getY(), desiredPose.getHeading());
-        } else{
-            return new Pose2d(desiredPose.getX(), currentPose.getY(), desiredPose.getHeading());
+            finalPose = finalPose.plus(new Pose2d(currentPose.getX()));
+        } else {
+            finalPose = finalPose.plus(new Pose2d(desiredPose.getX()));
         }
+        if(desiredPose.getY() == 0.0){
+            finalPose = finalPose.plus(new Pose2d(0.0, currentPose.getY()));
+        } else {
+            finalPose = finalPose.plus(new Pose2d(0.0, desiredPose.getY()));
+        }
+        finalPose = finalPose.plus(new Pose2d(0.0, 0.0, desiredPose.getHeading()));
+        return finalPose;
     }
 }

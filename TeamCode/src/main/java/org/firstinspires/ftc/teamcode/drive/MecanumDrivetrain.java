@@ -472,4 +472,7 @@ public class MecanumDrivetrain extends MecanumDrive {
         packet.put(label, value);
         dashboard.sendTelemetryPacket(packet);
     }
+    public Pose2d getDSPoseEstimate(){
+        return dsl.refinePosition(getPoseEstimate());
+    }
 }
