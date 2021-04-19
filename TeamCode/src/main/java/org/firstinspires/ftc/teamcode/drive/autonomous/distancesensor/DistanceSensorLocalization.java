@@ -96,11 +96,13 @@ public class DistanceSensorLocalization {
     }
     boolean isBetween(double angle, double a, double b){
         //Two cases, cross over or not
-        if (b>a){ //no crossover
-            return (angle>=modularAngle(a) && angle<=modularAngle(b));
-        }else { //crossover
-            return (angle>=modularAngle(a) || angle<=modularAngle(b));
-        }
+//        if (b>a){ //no crossover
+//            return (angle>=modularAngle(a) && angle<=modularAngle(b));
+//        }else { //crossover
+//            return (angle>=modularAngle(a) || angle<=modularAngle(b));
+//        }
+        double diff = getAngleDiff(a, b);
+        return (getAngleDiff(angle, a)<=diff && getAngleDiff(angle, b)<=diff);
     }
     static double getAngleDiff(double a, double b){
         if (a<b){
@@ -125,7 +127,7 @@ public class DistanceSensorLocalization {
         }
         return testPoseHeading+iValue*PI/4;
     }
-    double modularAngle(double angle){
+    public static double modularAngle(double angle){
         if (angle<0.0){
             return 2*PI+angle%(2*PI);
         }

@@ -7,6 +7,8 @@ import java.util.HashMap;
 
 import kotlin.Pair;
 
+import static org.firstinspires.ftc.teamcode.drive.autonomous.distancesensor.DistanceSensorLocalization.modularAngle;
+
 public class StateField {
     HashMap<WallType, Pair<Double, Double>> stateLines = new HashMap<>();
     HashMap<WallType, Pair<Double, Double>> stateZones = new HashMap<>();
@@ -30,9 +32,9 @@ public class StateField {
         System.out.println(hitpoint2);
         Vector2d distance = hitpoint1.minus(hitpoint2);
         double angle = distance.angleBetween(hitpoint2);
-        Pair line = new Pair<>(Math.sin(angle)*hitpoint2.norm(), -wall.heading+Math.PI/2+distance.angle());
+        Pair line = new Pair<>(Math.sin(angle)*hitpoint2.norm(), absoluteAngle(wall.heading+Math.PI/2-distance.angle()));
         System.out.println("Heading ");
-        System.out.println(-Math.toDegrees(wall.heading-Math.PI/2-distance.angle()));
+        System.out.println(absoluteAngle(-Math.toDegrees(wall.heading-Math.PI/2-distance.angle())));
         System.out.println("Offset ");
         System.out.println(Math.sin(angle)*hitpoint2.norm());
         stateLines.put(wall, line);
@@ -83,5 +85,15 @@ public class StateField {
         }
         finalPose = finalPose.plus(new Pose2d(0.0, 0.0, desiredPose.getHeading()));
         return finalPose;
+    }
+    double absoluteAngle(double angle){
+        double clampedAngle = angle %(2*Math.PI);
+        if(clampedAngle<-Math.PI){
+            return clampedAngle+2*Math.PI;
+        }
+        if(clampedAngle>Math.PI){
+            return clampedAngle-2*Math.PI;
+        }
+        return clampedAngle;
     }
 }

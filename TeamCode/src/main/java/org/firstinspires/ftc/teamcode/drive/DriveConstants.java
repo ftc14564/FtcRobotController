@@ -53,8 +53,8 @@ public class DriveConstants {
      * motor encoders or have elected not to use them for velocity control, these values should be
      * empirically tuned.
      */
-    public static double kV = 0.025376202971854851; //Empirically tuned, depends on battery
-    public static double kA = 0.003; //Empirically tuned
+    public static double kV = 0.022376202971854851; //Empirically tuned, depends on battery //used to be 0.025
+    public static double kA = 0.0; //Empirically tuned //used to be 0.003
     public static double kStatic = 0.0192; //Empirically tuned
 
     /*
