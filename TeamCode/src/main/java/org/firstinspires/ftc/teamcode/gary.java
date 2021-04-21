@@ -38,6 +38,7 @@ public class gary extends LinearOpMode {
     double basePower = 0.6;
     double turnPower = 0.2;
     double indivTurnPower = 0.5;
+    int mkParallelState = 0;
 
 
     public void teleopInitFn() {
@@ -66,7 +67,30 @@ public class gary extends LinearOpMode {
         rightBack.setDirection(DcMotorSimple.Direction.FORWARD);
 
     }
-
+    void startAutomatePowershots(DistanceSensor ds1, DistanceSensor ds2){
+        if(mkParallelState==0){
+            double dsDist = 6;
+            double theta = Math.atan((ds1.getDistance(DistanceUnit.INCH)-ds2.getDistance(DistanceUnit.INCH))/dsDist); //doesn't have to be that accurate
+            //drive.turnAsync(theta);
+            mkParallelState=1;
+        }
+    }
+    void endAutomatePowershots(DistanceSensor ds1, double offset){
+        if(mkParallelState==1){
+            if(drive.mode== MecanumDrivetrain.Mode.IDLE){
+                drive.setPoseEstimate(new Pose2d());
+                //double strafeAmt = offset-ds1.getDistance(DistanceUnit.INCH);
+                double strafeAmt = 10;
+                drive.followTrajectoryAsync(drive.trajectoryBuilder(new Pose2d()).strafeLeft(strafeAmt).build());
+            }
+            if(drive.mode== MecanumDrivetrain.Mode.FOLLOW_TRAJECTORY){
+                mkParallelState=2;
+            }
+        }
+        if(mkParallelState==2 && drive.mode==MecanumDrivetrain.Mode.IDLE) {
+            mkParallelState=0;
+        }
+    }
     public void vectorCombineRoadrunner(double x, double y, double turn, double indivTurn) {
         double a = y - x;
         double b = y + x;
@@ -111,8 +135,12 @@ public class gary extends LinearOpMode {
                turn -= turnPower;
                indivTurn -= indivTurnPower;
             }
-
-            vectorCombineRoadrunner(gamepad1.left_stick_x, gamepad1.left_stick_y, turn, indivTurn);
+            if (gamepad1.dpad_left){
+                startAutomatePowershots(DSrf, DSrr);
+            }
+            if(mkParallelState==0){
+                vectorCombineRoadrunner(gamepad1.left_stick_x, gamepad1.left_stick_y, turn, indivTurn);
+            }
 
             if (gamepad2.left_trigger > 0.1) {
                 in_front.setPower(-1);
@@ -150,21 +178,22 @@ public class gary extends LinearOpMode {
             in_front.setPower(0);
             in_back.setPower(0);
             telemetry.addData("shooter power: ", shooter.getPower());
-            telemetry.addData("odoPose", drive.getPoseEstimate().toString());
+            //telemetry.addData("odoPose", drive.getPoseEstimate().toString());
             telemetry.addData("lf", dsValues);
-            telemetry.addData("dsPose", lastDSPose.toString());
+            //telemetry.addData("dsPose", lastDSPose.toString());
             telemetry.update();
-            drive.update(); //comment this out during real runs
-            if (time>=timePoint){
-                lastDSPose = drive.getDSPoseEstimate();
-                dsValues =
-                        "" + DSlf.getDistance(DistanceUnit.INCH)
-                       +" lr : " + DSlr.getDistance(DistanceUnit.INCH)
-                       +" rf : " + DSrf.getDistance(DistanceUnit.INCH)
-                       +" rr : " + DSrr.getDistance(DistanceUnit.INCH);
-                telemetry.update();
-                timePoint = time+updateRate;
-            }
+            drive.update();//comment this out during real runs
+            endAutomatePowershots(DSrf, 10);
+//            if (time>=timePoint){
+//                //lastDSPose = drive.getDSPoseEstimate();
+//                dsValues =
+//                        "" + DSlf.getDistance(DistanceUnit.INCH)
+//                       +" lr : " + DSlr.getDistance(DistanceUnit.INCH)
+//                       +" rf : " + DSrf.getDistance(DistanceUnit.INCH)
+//                       +" rr : " + DSrr.getDistance(DistanceUnit.INCH);
+//                telemetry.update();
+//                timePoint = time+updateRate;
+//            }
         }
     }
     }
